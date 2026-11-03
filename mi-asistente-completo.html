@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi asistente</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--tx:#1b1f2a;--mu:#6b7280;--ac:#4f46e5;--ac2:#eef2ff;--bd:#e5e7eb;--rd:#dc2626;--gn:#16a34a;--am:#d97706;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1117;--card:#181b24;--tx:#eceef5;--mu:#9aa1b2;--ac:#818cf8;--ac2:#232845;--bd:#2a2f3d;--rd:#f87171;--gn:#4ade80;--am:#fbbf24}}
+:root[data-theme="dark"]{--bg:#0f1117;--card:#181b24;--tx:#eceef5;--mu:#9aa1b2;--ac:#818cf8;--ac2:#232845;--bd:#2a2f3d;--rd:#f87171;--gn:#4ade80;--am:#fbbf24}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:560px;margin:0 auto;padding:16px 14px 40px}
+h1{font-size:22px;margin:4px 0 2px}
+.sub{color:var(--mu);font-size:14px;margin-bottom:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:14px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+input,select,textarea{font:inherit;color:var(--tx);background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:10px;min-width:0}
+input[type=text]{flex:1 1 100%}
+input[type=date],select{flex:1}
+button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:#fff;cursor:pointer}
+button.ghost{background:var(--ac2);color:var(--ac)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tabs button{flex:1;background:var(--ac2);color:var(--ac);padding:8px}
+.tabs button.on{background:var(--ac);color:#fff}
+.task{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.task:last-child{border-bottom:0}
+.task input[type=checkbox]{width:22px;height:22px;margin-top:2px;accent-color:var(--ac)}
+.task .t{flex:1}
+.task.done .t b{text-decoration:line-through;color:var(--mu)}
+.meta{font-size:13px;color:var(--mu)}
+.p-alta{color:var(--rd)}.p-media{color:var(--am)}.p-baja{color:var(--gn)}
+.late{color:var(--rd);font-weight:600}
+.del{background:none;color:var(--mu);padding:4px 8px;font-size:18px}
+.empty{color:var(--mu);text-align:center;padding:18px 0}
+#ai textarea{width:100%;min-height:70px;resize:vertical}
+#out{white-space:pre-wrap;margin-top:10px;font-size:15px}
+input[type=password]{flex:1}
+input[type=checkbox]{width:18px;height:18px;padding:0;accent-color:var(--ac);vertical-align:middle}
+label.meta{display:flex;align-items:center;gap:6px}
+button.on{background:var(--rd);color:#fff}
+#vst{white-space:pre-line}
+#callui{position:fixed;inset:0;z-index:50;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 18px;padding-top:calc(24px + env(safe-area-inset-top,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+#callui.show{display:flex}
+#cans{max-height:34vh;overflow:auto;margin-top:10px;font-size:17px;max-width:520px;white-space:pre-wrap}
+.chip{background:var(--ac2);color:var(--ac);padding:8px 12px;border-radius:10px;text-decoration:none;font-size:14px}
+.btn{display:inline-block;background:var(--ac);color:#fff;border-radius:10px;padding:12px 16px;text-decoration:none;margin-top:8px}
+.note{font-size:12px;color:var(--mu);margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chips button{background:var(--ac2);color:var(--ac);padding:7px 10px;font-size:14px}
+#mail textarea{width:100%;min-height:90px;resize:vertical}
+#mout{white-space:pre-wrap;margin-top:10px;font-size:15px}
+</style>
+</head>
+<body>
+<main>
+<h1>Mi asistente</h1>
+<div class="sub" id="hoy"></div>
+
+<div class="card">
+  <div class="row">
+    <input type="text" id="txt" placeholder="¿Qué tienes que hacer?" maxlength="140">
+    <input type="date" id="fecha">
+    <select id="prio"><option value="media">Media</option><option value="alta">Alta</option><option value="baja">Baja</option></select>
+    <button id="add">Agregar</button>
+  </div>
+</div>
+
+<div class="card" id="voz">
+  <b>Voz y apps</b>
+  <div class="row" style="margin-top:8px;align-items:center">
+    <button id="mic">🎤 Hablar</button>
+    <button id="call" class="ghost">📞 Llamar al asistente</button>
+    <button id="mtestb" class="ghost">🔧 Probar micrófono</button>
+    <label class="meta"><input type="checkbox" id="vout"> Responder en voz</label>
+    <label class="meta"><input type="checkbox" id="wake"> Modo escucha: di «asistente»</label>
+  </div>
+  <div class="note" id="vst"></div>
+  <div class="note">Si el micrófono no responde aquí, toca el cuadro de texto del asistente y usa el micrófono de tu teclado para dictar.</div>
+  <div class="meta" id="heard"></div>
+  <div id="openbar"></div>
+  <div class="meta" style="margin-top:10px"><b>Abrir apps</b></div>
+  <div class="chips" id="apps"></div>
+  <div class="row">
+    <input type="text" id="an" placeholder="Nombre de la app" style="flex:1 1 40%">
+    <input type="text" id="ap" placeholder="paquete, ej: com.app.nombre" style="flex:1 1 55%">
+    <button id="aadd" class="ghost">Agregar app</button>
+    <button id="aclr" class="ghost">Borrar las que agregué</button>
+  </div>
+  <div class="note">Comandos de ejemplo: «abre WhatsApp», «agrega tarea comprar pan», o cualquier pregunta o pedido.</div>
+</div>
+
+<div class="tabs" id="tabs">
+  <button data-f="pend" class="on">Pendientes</button>
+  <button data-f="hoy">Hoy</button>
+  <button data-f="done">Hechas</button>
+</div>
+<div class="card" id="list"></div>
+
+<div class="card" id="ai" hidden>
+  <b>Asistente con IA</b>
+  <div class="meta" style="margin:4px 0 0">Conoce tu lista de tareas. Toca una opción o escribe lo que necesites.</div>
+  <div class="meta" style="margin-top:8px"><b>¿En qué te puedo ayudar?</b></div>
+  <div class="chips" id="chips">
+    <button data-run="Organiza mi día de hoy: dime en qué orden hacer mis tareas pendientes y qué dejar para después.">Organizar mi día</button>
+    <button data-run="Arma un plan para esta semana repartiendo mis tareas pendientes por día.">Plan de la semana</button>
+    <button data-run="Toma mi tarea pendiente más importante y divídela en pasos pequeños que pueda hacer hoy.">Dividir una tarea</button>
+    <button data-run="Hazme un resumen corto de lo que tengo pendiente y qué está atrasado.">Resumen de pendientes</button>
+    <button data-fill="Ayúdame a estudiar este tema: ">Estudiar un tema</button>
+    <button data-fill="Redacta un mensaje para: ">Redactar un mensaje</button>
+    <button data-fill="Explícame de forma sencilla: ">Explicarme algo</button>
+  </div>
+  <textarea id="q" placeholder="Ej: ¿qué hago primero hoy? / Tengo taller el viernes y examen el lunes"></textarea>
+  <div class="row" style="margin-top:8px">
+    <button id="ask">Preguntar</button>
+    <button id="plan" class="ghost">Organizar mi día</button>
+    <button id="mk" class="ghost">Convertir en tareas</button>
+  </div>
+  <div id="out"></div>
+  <div class="note">La IA solo responde cuando tú la llamas; no ve nada más de tu teléfono.</div>
+</div>
+
+<div class="card" id="mail" hidden>
+  <b>Organizar mis correos</b>
+  <div class="meta" style="margin:4px 0 8px">Copia y pega uno o varios correos (o solo remitente y asunto). La IA los ordena por urgencia y te dice qué hacer con cada uno.</div>
+  <textarea id="mailtxt" placeholder="Pega aquí tus correos..."></textarea>
+  <div class="row" style="margin-top:8px">
+    <button id="mres">Resumir y priorizar</button>
+    <button id="mtar" class="ghost">Sacar tareas</button>
+    <button id="mresp" class="ghost">Redactar respuestas</button>
+  </div>
+  <div id="mout"></div>
+  <div class="note">No tengo acceso directo a tu bandeja de entrada: solo trabajo con lo que pegues aquí.</div>
+</div>
+<div class="card" id="cfg"><b>Ajustes de la IA</b>
+  <div class="meta" style="margin:4px 0 8px">Pega tu API key de Anthropic (se crea en console.anthropic.com). Se guarda solo en este teléfono.</div>
+  <div class="row"><input type="password" id="key" placeholder="sk-ant-..." autocomplete="off"><button id="savekey">Guardar</button></div>
+  <div class="note" id="keyst"></div></div>
+<div class="note">Tus tareas se guardan en este dispositivo.</div>
+</main>
+<div id="callui" role="dialog" aria-label="Llamada con el asistente">
+  <div style="font-size:64px">🤖</div>
+  <h2 style="margin:6px 0 2px">Asistente</h2>
+  <div class="meta" id="cstate"></div>
+  <div class="meta" id="cheard" style="margin-top:14px"></div>
+  <div id="cans"></div>
+  <div class="row" style="justify-content:center;margin-top:18px">
+    <button id="cgo">📞 Iniciar llamada</button>
+    <button id="cend" class="on">📴 Colgar</button>
+  </div>
+  <button id="cclose" class="ghost" style="margin-top:14px">Volver a la página</button>
+</div>
+
+<script>
+(function(){
+var KEY="asistente_tareas_v1",tasks=[],filtro="pend";
+function load(){try{var r=localStorage.getItem(KEY);tasks=r?JSON.parse(r):[]}catch(e){tasks=[]}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(tasks))}catch(e){}}
+function iso(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(x<10?"0":"")+x}
+var HOY=iso(new Date());
+document.getElementById("hoy").textContent=new Date().toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"});
+document.getElementById("fecha").value=HOY;
+var $=function(i){return document.getElementById(i)};
+function esc(s){var d=document.createElement("div");d.textContent=s;return d.innerHTML}
+var po={alta:0,media:1,baja:2};
+function render(){
+  var l=tasks.slice();
+  if(filtro==="pend")l=l.filter(function(t){return!t.done});
+  if(filtro==="hoy")l=l.filter(function(t){return!t.done&&t.date&&t.date<=HOY});
+  if(filtro==="done")l=l.filter(function(t){return t.done});
+  l.sort(function(a,b){return(a.date||"9999").localeCompare(b.date||"9999")||po[a.prio]-po[b.prio]});
+  if(!l.length){$("list").innerHTML='<div class="empty">Nada por aquí.</div>';return}
+  $("list").innerHTML=l.map(function(t){
+    var late=!t.done&&t.date&&t.date<HOY;
+    return '<div class="task'+(t.done?' done':'')+'"><input type="checkbox" data-id="'+t.id+'"'+(t.done?' checked':'')+'>'+
+    '<div class="t"><b>'+esc(t.text)+'</b><div class="meta"><span class="p-'+t.prio+'">'+t.prio+'</span>'+
+    (t.date?' · <span class="'+(late?'late':'')+'">'+(late?'vencida ':'')+t.date+'</span>':'')+'</div></div>'+
+    '<button class="del" data-del="'+t.id+'" aria-label="Borrar">×</button></div>'}).join("");
+}
+function addTask(text,date,prio){
+  if(!text)return;
+  tasks.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),text:text,date:date||"",prio:po[prio]!==undefined?prio:"media",done:false});
+  save();render();
+}
+$("add").onclick=function(){addTask($("txt").value.trim(),$("fecha").value,$("prio").value);$("txt").value="";$("txt").focus()};
+$("txt").onkeydown=function(e){if(e.key==="Enter")$("add").click()};
+$("list").onclick=function(e){
+  var c=e.target.getAttribute("data-id"),d=e.target.getAttribute("data-del");
+  if(c){tasks.forEach(function(t){if(t.id===c)t.done=!t.done});save();render()}
+  if(d){tasks=tasks.filter(function(t){return t.id!==d});save();render()}
+};
+$("tabs").onclick=function(e){
+  var f=e.target.getAttribute("data-f");if(!f)return;filtro=f;
+  Array.prototype.forEach.call($("tabs").children,function(b){b.classList.toggle("on",b===e.target)});render();
+};
+
+var busy=false;
+function getKey(){try{return localStorage.getItem("asistente_key")||""}catch(e){return ""}}
+async function sample(input,opts){
+  var k=getKey();if(!k)throw {code:"no_key"};
+  var r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":k,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-haiku-5-5",max_tokens:1000,messages:Array.isArray(input)?input:[{role:"user",content:input}]})});
+  if(r.status===429)throw {code:"rate_limited"};
+  if(!r.ok)throw {code:"http",status:r.status};
+  var d=await r.json();var t=(d.content||[]).map(function(c){return c.text||""}).join("");
+  if(opts&&opts.onText)opts.onText({text:t});
+  return {text:t};
+}
+sample.json=async function(input,opts){var r=await sample(input,opts);return JSON.parse(r.text.replace(/```json|```/g,"").trim())};
+function em(e){
+  if(e&&e.code==="no_key")return "Primero guarda tu API key en Ajustes (más abajo).";
+  if(e&&e.code==="rate_limited")return "Demasiadas consultas, espera un momento.";
+  if(e&&e.status===401)return "Tu API key no es válida. Revísala en Ajustes.";
+  if(e&&e.status===402)return "Tu cuenta de API no tiene saldo. Agrega crédito en console.anthropic.com.";
+  if(e instanceof TypeError)return "No hay internet o la conexión fue bloqueada.";
+  return "No pude responder ahora. Intenta de nuevo.";
+}
+function ctx(){return "Fecha de hoy: "+HOY+". Tareas del usuario (JSON): "+JSON.stringify(tasks.map(function(t){return{tarea:t.text,fecha:t.date,prioridad:t.prio,hecha:t.done}}))}
+var SYS="Eres un asistente personal breve y práctico. Responde en español, en pocas líneas, con pasos concretos. ";
+async function run(prompt){
+  if(!sample||busy)return;busy=true;$("out").textContent="Pensando...";
+  try{
+    await sample(SYS+ctx()+"\n\nPedido: "+prompt,{cache:false,onText:function(r){$("out").textContent=r.text}});speak($("out").textContent);
+  }catch(e){$("out").textContent=em(e)}
+  busy=false;
+}
+$("ask").onclick=function(){var v=$("q").value.trim();if(v)run(v)};
+$("plan").onclick=function(){run("Organiza mi día de hoy: dime en qué orden hacer mis tareas pendientes y qué dejar para después.")};
+$("mk").onclick=async function(){
+  var v=$("q").value.trim();if(!v||!sample||busy)return;busy=true;$("out").textContent="Creando tareas...";
+  try{
+    var r=await sample.json("Hoy es "+HOY+". Convierte este texto en tareas. Responde SOLO un arreglo JSON de objetos {\"text\":string,\"date\":\"YYYY-MM-DD\" o \"\",\"prio\":\"alta\"|\"media\"|\"baja\"}. Texto: "+v,{cache:false});
+    if(Array.isArray(r)&&r.length){r.forEach(function(t){if(t&&t.text)addTask(String(t.text).slice(0,140),/^\d{4}-\d{2}-\d{2}$/.test(t.date)?t.date:"",t.prio)});$("out").textContent="Agregué "+r.length+" tarea(s) a tu lista.";$("q").value=""}
+    else $("out").textContent="No encontré tareas en ese texto."
+  }catch(e){$("out").textContent=em(e)}
+  busy=false;
+};
+$("chips").onclick=function(e){var p=e.target.getAttribute("data-run"),f=e.target.getAttribute("data-fill");if(p)run(p);if(f){$("q").value=f;$("q").focus()}};
+async function mailRun(instr){
+  var v=$("mailtxt").value.trim();if(!v||!sample||busy)return;busy=true;$("mout").textContent="Pensando...";
+  try{await sample(SYS+"Hoy es "+HOY+". "+instr+"\n\nCorreos:\n"+v,{cache:false,onText:function(r){$("mout").textContent=r.text}})}
+  catch(e){$("mout").textContent=em(e)}
+  busy=false;
+}
+$("mres").onclick=function(){mailRun("Ordena estos correos de más a menos urgente. Por cada uno escribe una línea: remitente o asunto, qué piden y qué hacer (responder, archivar o ignorar). Termina diciendo qué haría primero.")};
+$("mresp").onclick=function(){mailRun("Redacta una respuesta corta y cordial en español para cada correo que requiera respuesta.")};
+$("mtar").onclick=async function(){
+  var v=$("mailtxt").value.trim();if(!v||!sample||busy)return;busy=true;$("mout").textContent="Buscando tareas...";
+  try{
+    var r=await sample.json("Hoy es "+HOY+". Extrae de estos correos las acciones que el usuario debe hacer. Responde SOLO un arreglo JSON de objetos {\"text\":string,\"date\":\"YYYY-MM-DD\" o \"\",\"prio\":\"alta\"|\"media\"|\"baja\"}. Correos: "+v,{cache:false});
+    if(Array.isArray(r)&&r.length){r.forEach(function(t){if(t&&t.text)addTask(String(t.text).slice(0,140),/^\d{4}-\d{2}-\d{2}$/.test(t.date)?t.date:"",t.prio)});$("mout").textContent="Agregué "+r.length+" tarea(s) a tu lista."}
+    else $("mout").textContent="No encontré acciones pendientes en esos correos.";
+  }catch(e){$("mout").textContent=em(e)}
+  busy=false;
+};
+var SR=window.SpeechRecognition||window.webkitSpeechRecognition,rec=null,wake=false,pausedTts=false,voiceOut=true;
+try{var sv=localStorage.getItem("asistente_voz");if(sv!==null)voiceOut=sv==="1"}catch(e){}
+$("vout").checked=voiceOut;
+var APPS=[["WhatsApp","com.whatsapp"],["YouTube","com.google.android.youtube"],["Gmail","com.google.android.gm"],["Maps","com.google.android.apps.maps"],["Chrome","com.android.chrome"],["Spotify","com.spotify.music"],["Instagram","com.instagram.android"],["TikTok","com.zhiliaoapp.musically"],["Facebook","com.facebook.katana"],["Telegram","org.telegram.messenger"],["Drive","com.google.android.apps.docs"],["Play Store","com.android.vending"]];
+var myApps=[];try{myApps=JSON.parse(localStorage.getItem("asistente_apps")||"[]")}catch(e){}
+function saveApps(){try{localStorage.setItem("asistente_apps",JSON.stringify(myApps))}catch(e){}}
+function allApps(){return APPS.concat(myApps)}
+function norm(x){return x.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")}
+function appUrl(p){return "intent://#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package="+p+";S.browser_fallback_url="+encodeURIComponent("https://play.google.com/store/apps/details?id="+p)+";end"}
+function renderApps(){$("apps").innerHTML=allApps().map(function(a){return '<a class="chip" href="'+appUrl(a[1])+'">'+esc(a[0])+'</a>'}).join("")}
+function openApp(a){
+  var u=appUrl(a[1]);
+  $("openbar").innerHTML='<a class="btn" href="'+u+'">Abrir '+esc(a[0])+'</a>';
+  try{location.href=u}catch(e){}
+}
+function speak(t){
+  if((!voiceOut&&!calling)||!window.speechSynthesis||!t)return;
+  try{
+    speechSynthesis.cancel();
+    var u=new SpeechSynthesisUtterance(String(t).replace(/[*#_`]/g,"").slice(0,600));u.lang="es-CO";
+    pausedTts=true;try{rec&&rec.stop()}catch(e){}
+    u.onend=u.onerror=function(){pausedTts=false;if(wake)startRec();else if(calling)callListen()};
+    speechSynthesis.speak(u);
+  }catch(e){pausedTts=false}
+}
+function say(m){$("out").textContent=m;speak(m)}
+function handle(cmd){
+  var n=norm(cmd);
+  if(!n){say("Dime, ¿en qué te ayudo?");return}
+  var m=n.match(/^(abre|abrir|abri|ejecuta|inicia)\s+(la\s+app\s+de\s+|la\s+aplicacion\s+de\s+|la\s+app\s+|el\s+|la\s+)?(.+)$/);
+  if(m){
+    var tg=m[3].trim();
+    var f=allApps().filter(function(a){var an=norm(a[0]);return tg.indexOf(an)>=0||an.indexOf(tg)>=0})[0];
+    if(f){openApp(f);say("Abriendo "+f[0]+". Si no se abre, toca el botón.")}
+    else say("No encontré esa app en mi lista. Agrégala abajo con su nombre y paquete.");
+    return;
+  }
+  if(/^(agrega|anade|anota|crea|nueva)\s+(una\s+)?tarea/.test(n)){
+    var tx=cmd.replace(/^\S+\s+(una\s+)?tarea[:,]?\s*/i,"").trim();
+    if(tx){addTask(tx.slice(0,140),HOY,"media");say("Listo, agregué la tarea: "+tx)}else say("¿Qué tarea quieres agregar?");
+    return;
+  }
+  $("q").value=cmd;run(cmd);
+}
+function onHeard(t){
+  var cmd=t;
+  if(wake){if(!/asistente/i.test(t))return;cmd=t.replace(/^.*?asistente[\s,.:]*/i,"")}
+  $("heard").textContent="Dijiste: "+cmd;
+  handle(cmd);
+}
+function startRec(){
+  if(!SR){$("vst").textContent="Este navegador no permite reconocimiento de voz.";return false}
+  try{rec&&rec.abort()}catch(e){}
+  rec=new SR();rec.lang="es-CO";rec.continuous=wake;rec.interimResults=false;
+  rec.onstart=function(){$("vst").textContent=wake?"Escuchando... di «asistente» y tu pedido.":"Te escucho..."};
+  rec.onresult=function(ev){onHeard(ev.results[ev.results.length-1][0].transcript.trim())};
+  rec.onerror=function(ev){
+    if(ev.error==="no-speech"||ev.error==="aborted")return;
+    wake=false;$("wake").checked=false;
+    $("vst").textContent=ev.error==="not-allowed"||ev.error==="service-not-allowed"?"Sin permiso de micrófono. Actívalo en los ajustes del navegador.":"No pude usar el micrófono ("+ev.error+").";
+  };
+  rec.onend=function(){if(wake&&!pausedTts)setTimeout(startRec,400);else if(!wake)$("vst").textContent=""};
+  try{rec.start();return true}catch(e){return false}
+}
+$("mic").onclick=function(){if(calling)return;if(window.speechSynthesis)speechSynthesis.cancel();pausedTts=false;if(!wake)startRec()};
+$("wake").onchange=function(){
+  if(calling){this.checked=false;return}wake=this.checked;
+  if(wake){if(!startRec()){wake=false;this.checked=false}}
+  else{try{rec&&rec.stop()}catch(e){}$("vst").textContent=""}
+};
+$("vout").onchange=function(){voiceOut=this.checked;try{localStorage.setItem("asistente_voz",voiceOut?"1":"0")}catch(e){}if(!voiceOut&&window.speechSynthesis)speechSynthesis.cancel()};
+$("aadd").onclick=function(){
+  var nm=$("an").value.trim(),pk=$("ap").value.trim();
+  if(!nm||!/^[a-z][\w]*(\.[\w]+)+$/i.test(pk)){$("vst").textContent="Escribe el nombre y un paquete válido (ej: com.app.nombre).";return}
+  myApps.push([nm.slice(0,30),pk]);saveApps();$("an").value="";$("ap").value="";renderApps();$("vst").textContent="App agregada.";
+};
+$("aclr").onclick=function(){myApps=[];saveApps();renderApps()};
+var calling=false,hist=[],silent=0;
+var CALL="Estás en una llamada de voz: responde en máximo 3 frases cortas, en lenguaje natural hablado, sin listas ni asteriscos ni símbolos. ";
+function callEnd(m){
+  calling=false;try{rec&&rec.abort()}catch(e){}
+  if(window.speechSynthesis)speechSynthesis.cancel();pausedTts=false;
+  $("call").textContent="📞 Llamar al asistente";$("call").classList.remove("on");$("vst").textContent=m||"";
+}
+function callListen(){
+  if(!calling||pausedTts)return;
+  try{rec&&rec.abort()}catch(e){}
+  rec=new SR();rec.lang="es-CO";rec.continuous=false;rec.interimResults=false;
+  var got=false;
+  rec.onstart=function(){$("vst").textContent="📞 En llamada: te escucho... (di «colgar» para terminar)"};
+  rec.onresult=function(ev){got=true;silent=0;callHeard(ev.results[0][0].transcript.trim())};
+  rec.onerror=function(ev){if(ev.error==="no-speech"||ev.error==="aborted")return;callEnd("No pude usar el micrófono ("+ev.error+").")};
+  rec.onend=function(){
+    if(!calling||got||pausedTts||busy)return;
+    silent++;
+    if(silent>=4){callEnd("Llamada terminada por silencio.");return}
+    setTimeout(callListen,300);
+  };
+  try{rec.start()}catch(e){}
+}
+function callHeard(t){
+  var n=norm(t);
+  $("heard").textContent="Dijiste: "+t;
+  if(/^(colgar|cuelga|terminar|terminemos|adios|chao|hasta luego)/.test(n)){callEnd("Llamada terminada.");return}
+  if(/^(abre|abrir|abri|ejecuta|inicia)\s/.test(n)||/^(agrega|anade|anota|crea|nueva)\s+(una\s+)?tarea/.test(n)){handle(t);return}
+  callAsk(t);
+}
+async function callAsk(t){
+  if(!sample||busy){callListen();return}
+  busy=true;$("out").textContent="Pensando...";
+  hist.push({role:"user",content:t});
+  var msgs=hist.map(function(m,i){return i===hist.length-1?{role:"user",content:SYS+CALL+ctx()+"\n\nPedido: "+m.content}:m});
+  try{
+    var r=await sample(msgs,{cache:false});
+    var a=(r&&r.text)||"";
+    hist.push({role:"assistant",content:a});
+    while(hist.length>16)hist.splice(0,2);
+    busy=false;$("out").textContent=a;
+    if(window.speechSynthesis)speak(a);else callListen();
+  }catch(e){
+    busy=false;hist.pop();
+    var m=em(e);$("out").textContent=m;
+    if(e&&(e.code==="not_granted"||e.code==="no_key"||e.status===401)){callEnd(m);return}
+    if(window.speechSynthesis)speak(m);else callListen();
+  }
+}
+$("call").onclick=function(){
+  if(calling){callEnd("Llamada terminada.");return}
+  if(!SR){$("vst").textContent="Este navegador no permite reconocimiento de voz.";return}
+  if(!sample){$("vst").textContent="La IA no está disponible en este momento.";return}
+  if(wake){wake=false;$("wake").checked=false;try{rec&&rec.stop()}catch(e){}}
+  calling=true;hist=[];silent=0;this.textContent="📴 Colgar";this.classList.add("on");
+  if(window.speechSynthesis)speak("Hola, te escucho. ¿En qué te ayudo?");else callListen();
+};
+async function micTest(){
+  var o=[];
+  o.push(SR?"Reconocimiento de voz: disponible.":"Reconocimiento de voz: NO disponible en este navegador.");
+  try{var fp=document.featurePolicy||document.permissionsPolicy;if(fp&&fp.allowsFeature&&!fp.allowsFeature("microphone"))o.push("La página que contiene este asistente bloquea el micrófono; no depende de tus ajustes.")}catch(e){}
+  try{var p=await navigator.permissions.query({name:"microphone"});o.push("Permiso del micrófono: "+({granted:"concedido",denied:"bloqueado",prompt:"se pedirá al usarlo"}[p.state]||p.state)+".")}catch(e){}
+  try{var st=await navigator.mediaDevices.getUserMedia({audio:true});st.getTracks().forEach(function(t){t.stop()});o.push("Micrófono: funciona.")}
+  catch(e){o.push("Micrófono: no se pudo abrir ("+((e&&e.name)||"error")+").")}
+  $("vst").textContent=o.join("\n");
+}
+$("mtestb").onclick=micTest;
+var uiOpen=false;
+function syncCallUi(){
+  $("callui").classList.toggle("show",uiOpen);
+  if(!uiOpen)return;
+  $("cstate").textContent=calling?(busy?"Pensando...":(pausedTts?"Hablando...":"Escuchando...")):($("vst").textContent||"Llamada no iniciada");
+  $("cheard").textContent=$("heard").textContent;
+  $("cans").textContent=$("out").textContent;
+  $("cgo").style.display=calling?"none":"";
+  $("cend").style.display=calling?"":"none";
+}
+function applyHash(){uiOpen=location.hash==="#llamada";syncCallUi()}
+window.addEventListener("hashchange",applyHash);
+$("call").addEventListener("click",function(){if(calling)location.hash="llamada"});
+$("cgo").onclick=function(){$("call").click()};
+$("cend").onclick=function(){if(calling)$("call").click()};
+$("cclose").onclick=function(){if(calling)callEnd("Llamada terminada.");location.hash=""};
+setInterval(syncCallUi,300);
+applyHash();
+renderApps();
+if(!SR)$("vst").textContent="Este navegador no permite reconocimiento de voz; puedes escribir tus pedidos.";
+$("ai").hidden=false;$("mail").hidden=false;
+function keyst(){$("keyst").textContent=getKey()?"API key guardada en este teléfono.":"Todavía no hay API key guardada."}
+$("savekey").onclick=function(){var v=$("key").value.trim();if(!v)return;try{localStorage.setItem("asistente_key",v)}catch(e){}$("key").value="";keyst()};
+keyst();
+
+load();render();
+})();
+</script>
+</body>
+</html>
